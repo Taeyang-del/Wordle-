@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,7 +65,6 @@
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Fun Puzzle Game</h1>
@@ -77,26 +78,9 @@
     </div>
 
     <script>
-        const words = [
-            "cat", "dog", "bat", "rat", "fox", "bee", "owl", "cow", "ant", "hen",
-            "kid", "pig", "cub", "eel", "cod", "bug", "bat", "tap", "jam", "gap",
-            "pen", "run", "sun", "pan", "tan", "van", "bag", "tag", "cap", "map",
-            "lap", "nap", "fan", "man", "ham", "yam", "log", "fog", "jog", "hog",
-            "sip", "zip", "tip", "lip", "hip", "dip", "rip", "pip", "kit", "fit",
-            "bit", "sit", "hit", "wit", "nit", "lit", "pit", "mix", "fix", "six",
-            "box", "ox", "ax", "tax", "wax", "max", "paw", "jaw", "saw", "raw",
-            "sea", "tea", "pea", "key", "toy", "boy", "joy", "hay", "bay", "day",
-            "yes", "net", "pet", "get", "bet", "let", "met", "set", "wet", "jet",
-            "red", "bed", "fed", "led", "wed", "nod", "pod", "rod", "mod", "god",
-            "cub", "pub", "hub", "rub", "sub", "tub", "bud", "mud", "rug", "hug",
-            "sky", "why", "dry", "fry", "cry", "try", "buy", "guy", "shy", "ply",
-            "can", "fan", "pan", "tan", "van", "man", "ran", "ban", "lan", "dan",
-            "pot", "hot", "cot", "got", "dot", "lot", "not", "tot", "mot", "rot",
-            "sit", "bit", "kit", "hit", "lit", "pit", "fit", "wit", "nit", "git",
-            "sun", "fun", "bun", "gun", "run", "pun", "nun", "won", "ton", "yon",
-            "dog", "fog", "jog", "log", "hog", "cog", "bog", "gog", "mog", "rog",
-            "ant", "bent", "dent", "kent", "lent", "rent", "sent", "tent", "went", "vent"
-        ];
+        const words = [...new Set([
+            "cat", "dog", "bat", "rat", "fox", "bee", "owl", "cow", "ant", "hen"
+        ])];
         let currentWord = "";
         let score = 0;
 
@@ -107,6 +91,7 @@
         function generatePuzzle() {
             const jumbledBox = document.getElementById('jumbled-box');
             const dropZone = document.getElementById('drop-zone');
+            document.getElementById('message').textContent = '';
             currentWord = words[Math.floor(Math.random() * words.length)];
             const shuffledWord = shuffleWord(currentWord);
 
@@ -122,6 +107,39 @@
 
                 letterElement.addEventListener('dragstart', event => {
                     event.dataTransfer.setData('text', letter);
+                });
+
+                letterElement.addEventListener('touchstart', event => {
+                    const touch = event.touches[0];
+                    letterElement.dataset.touchX = touch.clientX;
+                    letterElement.dataset.touchY = touch.clientY;
+                });
+
+                letterElement.addEventListener('touchmove', event => {
+                    event.preventDefault();
+                    const touch = event.touches[0];
+                    letterElement.style.position = 'absolute';
+                    letterElement.style.left = `${touch.clientX}px`;
+                    letterElement.style.top = `${touch.clientY}px`;
+                });
+
+                letterElement.addEventListener('touchend', () => {
+                    const dropZone = document.getElementById('drop-zone');
+                    const rect = dropZone.getBoundingClientRect();
+                    const touchX = parseInt(letterElement.dataset.touchX);
+                    const touchY = parseInt(letterElement.dataset.touchY);
+
+                    if (
+                        touchX >= rect.left &&
+                        touchX <= rect.right &&
+                        touchY >= rect.top &&
+                        touchY <= rect.bottom
+                    ) {
+                        dropZone.appendChild(letterElement);
+                        letterElement.style.position = 'static';
+                    } else {
+                        letterElement.style.position = 'static';
+                    }
                 });
 
                 jumbledBox.appendChild(letterElement);
@@ -144,19 +162,15 @@
 
             droppedLetter.addEventListener('dragstart', event => {
                 event.dataTransfer.setData('text', letter);
-                const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
-                if (originalLetter) {
-                    originalLetter.style.display = 'inline-block';
-                }
                 droppedLetter.remove();
+                const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
+                if (originalLetter) originalLetter.style.display = 'inline-block';
             });
 
             document.getElementById('drop-zone').appendChild(droppedLetter);
 
             const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
-            if (originalLetter) {
-                originalLetter.style.display = 'none';
-            }
+            if (originalLetter) originalLetter.style.display = 'none';
         });
 
         document.getElementById('check').addEventListener('click', () => {
