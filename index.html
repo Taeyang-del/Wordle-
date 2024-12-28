@@ -1,0 +1,182 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Puzzle Game</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2097/2097636.png" type="image/png">
+    <style>
+        body {
+            font-family: 'Comic Sans MS', sans-serif;
+            background-color: #ffe5ec;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 80%;
+            max-width: 600px;
+        }
+        .jumbled-box {
+            background-color: #fef2c0;
+            border: 2px dashed #ffa1a1;
+            padding: 10px;
+            font-size: 1.5em;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .drop-zone {
+            min-height: 50px;
+            border: 2px dashed #94d2bd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 20px 0;
+            background-color: #e9ffe9;
+        }
+        .word-piece {
+            display: inline-block;
+            background-color: #ffcad4;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: grab;
+            border-radius: 5px;
+            font-size: 1.2em;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border: none;
+            background-color: #94d2bd;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #74c69d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Fun Puzzle Game</h1>
+        <p>Drag and drop the letters to form the correct word!</p>
+        <div class="jumbled-box" id="jumbled-box"></div>
+        <div class="drop-zone" id="drop-zone">Drop letters here</div>
+        <p id="message"></p>
+        <button id="check">Check</button>
+        <button id="new-word">New Word</button>
+        <p id="score">Score: 0</p>
+    </div>
+
+    <script>
+        const words = [
+            "cat", "dog", "bat", "rat", "fox", "bee", "owl", "cow", "ant", "hen",
+            "kid", "pig", "cub", "eel", "cod", "bug", "bat", "tap", "jam", "gap",
+            "pen", "run", "sun", "pan", "tan", "van", "bag", "tag", "cap", "map",
+            "lap", "nap", "fan", "man", "ham", "yam", "log", "fog", "jog", "hog",
+            "sip", "zip", "tip", "lip", "hip", "dip", "rip", "pip", "kit", "fit",
+            "bit", "sit", "hit", "wit", "nit", "lit", "pit", "mix", "fix", "six",
+            "box", "ox", "ax", "tax", "wax", "max", "paw", "jaw", "saw", "raw",
+            "sea", "tea", "pea", "key", "toy", "boy", "joy", "hay", "bay", "day",
+            "yes", "net", "pet", "get", "bet", "let", "met", "set", "wet", "jet",
+            "red", "bed", "fed", "led", "wed", "nod", "pod", "rod", "mod", "god",
+            "cub", "pub", "hub", "rub", "sub", "tub", "bud", "mud", "rug", "hug",
+            "sky", "why", "dry", "fry", "cry", "try", "buy", "guy", "shy", "ply",
+            "can", "fan", "pan", "tan", "van", "man", "ran", "ban", "lan", "dan",
+            "pot", "hot", "cot", "got", "dot", "lot", "not", "tot", "mot", "rot",
+            "sit", "bit", "kit", "hit", "lit", "pit", "fit", "wit", "nit", "git",
+            "sun", "fun", "bun", "gun", "run", "pun", "nun", "won", "ton", "yon",
+            "dog", "fog", "jog", "log", "hog", "cog", "bog", "gog", "mog", "rog",
+            "ant", "bent", "dent", "kent", "lent", "rent", "sent", "tent", "went", "vent"
+        ];
+        let currentWord = "";
+        let score = 0;
+
+        function shuffleWord(word) {
+            return word.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        function generatePuzzle() {
+            const jumbledBox = document.getElementById('jumbled-box');
+            const dropZone = document.getElementById('drop-zone');
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            const shuffledWord = shuffleWord(currentWord);
+
+            jumbledBox.innerHTML = '';
+            dropZone.innerHTML = '';
+
+            shuffledWord.split('').forEach(letter => {
+                const letterElement = document.createElement('span');
+                letterElement.textContent = letter;
+                letterElement.className = 'word-piece';
+                letterElement.draggable = true;
+                letterElement.dataset.letter = letter;
+
+                letterElement.addEventListener('dragstart', event => {
+                    event.dataTransfer.setData('text', letter);
+                });
+
+                jumbledBox.appendChild(letterElement);
+            });
+        }
+
+        document.getElementById('drop-zone').addEventListener('dragover', event => {
+            event.preventDefault();
+        });
+
+        document.getElementById('drop-zone').addEventListener('drop', event => {
+            event.preventDefault();
+            const letter = event.dataTransfer.getData('text');
+
+            const droppedLetter = document.createElement('span');
+            droppedLetter.textContent = letter;
+            droppedLetter.className = 'word-piece';
+            droppedLetter.draggable = true;
+            droppedLetter.dataset.letter = letter;
+
+            droppedLetter.addEventListener('dragstart', event => {
+                event.dataTransfer.setData('text', letter);
+                const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
+                if (originalLetter) {
+                    originalLetter.style.display = 'inline-block';
+                }
+                droppedLetter.remove();
+            });
+
+            document.getElementById('drop-zone').appendChild(droppedLetter);
+
+            const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
+            if (originalLetter) {
+                originalLetter.style.display = 'none';
+            }
+        });
+
+        document.getElementById('check').addEventListener('click', () => {
+            const guessedWord = Array.from(document.getElementById('drop-zone').children).map(el => el.textContent).join('');
+
+            if (guessedWord === currentWord) {
+                document.getElementById('message').textContent = 'Correct! Well done!';
+                score++;
+                generatePuzzle();
+            } else {
+                document.getElementById('message').textContent = `Incorrect! The correct word was: ${currentWord}`;
+                generatePuzzle();
+            }
+
+            document.getElementById('score').textContent = `Score: ${score}`;
+        });
+
+        document.getElementById('new-word').addEventListener('click', generatePuzzle);
+
+        generatePuzzle();
+    </script>
+</body>
+</html>
