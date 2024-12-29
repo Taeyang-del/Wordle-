@@ -16,6 +16,7 @@
             align-items: center;
             height: 100vh;
             flex-direction: column;
+            overflow: hidden;
         }
         .container {
             text-align: center;
@@ -33,6 +34,7 @@
             font-size: 1.5em;
             margin: 20px 0;
             border-radius: 5px;
+            min-height: 50px;
         }
         .drop-zone {
             min-height: 50px;
@@ -63,10 +65,29 @@
         button:hover {
             background-color: #74c69d;
         }
+        .confetti {
+            position: fixed;
+            top: -10px;
+            width: 10px;
+            height: 10px;
+            background-color: #ffcad4;
+            animation: fall 3s linear infinite;
+        }
+        @keyframes fall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <img src="https://cdn-icons-png.flaticon.com/512/2097/2097636.png" alt="Fun Puzzle Game Logo" style="width: 100px; height: auto; margin-bottom: 10px;">
         <h1>Fun Puzzle Game</h1>
         <p>Drag and drop the letters to form the correct word!</p>
         <div class="jumbled-box" id="jumbled-box"></div>
@@ -77,15 +98,46 @@
         <p id="score">Score: 0</p>
     </div>
 
+    <audio id="snap-sound" src="https://freesound.org/data/previews/256/256113_3263906-lq.mp3" preload="auto"></audio>
+
     <script>
-        const words = [...new Set([
-            "cat", "dog", "bat", "rat", "fox", "bee", "owl", "cow", "ant", "hen"
-        ])];
+        const words = [
+            "ant", "bog", "flame", "grape", "mar", "par", "pink", "sap", "sat", "tip",
+            "apple", "dog", "fox", "hat", "mat", "peach", "sea", "snow", "toy", "violet",
+            "aqua", "far", "gap", "hen", "max", "pet", "seven", "star", "tray", "wear",
+            "bat", "fat", "gear", "hit", "mix", "plant", "silver", "stay", "tub", "wed",
+            "beige", "fear", "get", "hug", "mom", "pod", "sit", "sun", "van", "white",
+            "blue", "fig", "gold", "hum", "moon", "pug", "six", "tap", "violet", "wig",
+            "brick", "fix", "green", "ice", "noble", "quiet", "six", "tan", "vivid", "won",
+            "brother", "flame", "gum", "index", "not", "ram", "six", "tea", "wax", "xenon",
+            "bug", "fox", "hat", "jaw", "ocean", "rat", "snow", "tear", "wear",
+            "brown", "fun", "hay", "jog", "owl", "raw", "snow", "three", "yellow", "zebra",
+            "cap", "gap", "gear", "jug", "pea", "red", "snow", "toy", "zebra", "white"
+        ];
         let currentWord = "";
         let score = 0;
 
+        const snapSound = document.getElementById('snap-sound');
+
         function shuffleWord(word) {
             return word.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        function playSnapSound() {
+            snapSound.currentTime = 0;
+            snapSound.play().catch(error => console.log('Audio play failed:', error));
+        }
+
+        function generateConfetti() {
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.animationDelay = `${Math.random()}s`;
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 3000);
+            }
         }
 
         function generatePuzzle() {
@@ -109,36 +161,15 @@
                     event.dataTransfer.setData('text', letter);
                 });
 
-                letterElement.addEventListener('touchstart', event => {
-                    const touch = event.touches[0];
-                    letterElement.dataset.touchX = touch.clientX;
-                    letterElement.dataset.touchY = touch.clientY;
-                });
-
-                letterElement.addEventListener('touchmove', event => {
-                    event.preventDefault();
-                    const touch = event.touches[0];
-                    letterElement.style.position = 'absolute';
-                    letterElement.style.left = `${touch.clientX}px`;
-                    letterElement.style.top = `${touch.clientY}px`;
-                });
-
-                letterElement.addEventListener('touchend', () => {
+                letterElement.addEventListener('dragend', () => {
                     const dropZone = document.getElementById('drop-zone');
-                    const rect = dropZone.getBoundingClientRect();
-                    const touchX = parseInt(letterElement.dataset.touchX);
-                    const touchY = parseInt(letterElement.dataset.touchY);
+                    const isInDropZone = Array.from(dropZone.children).some(child => child.dataset.letter === letterElement.dataset.letter);
 
-                    if (
-                        touchX >= rect.left &&
-                        touchX <= rect.right &&
-                        touchY >= rect.top &&
-                        touchY <= rect.bottom
-                    ) {
-                        dropZone.appendChild(letterElement);
-                        letterElement.style.position = 'static';
-                    } else {
-                        letterElement.style.position = 'static';
+                    if (!isInDropZone) {
+                        const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letterElement.dataset.letter}"]`);
+                        if (!originalLetter) {
+                            jumbledBox.appendChild(letterElement);
+                        }
                     }
                 });
 
@@ -162,15 +193,20 @@
 
             droppedLetter.addEventListener('dragstart', event => {
                 event.dataTransfer.setData('text', letter);
-                droppedLetter.remove();
                 const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
-                if (originalLetter) originalLetter.style.display = 'inline-block';
+                if (!originalLetter) {
+                    document.getElementById('jumbled-box').appendChild(droppedLetter);
+                }
             });
 
             document.getElementById('drop-zone').appendChild(droppedLetter);
 
             const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
-            if (originalLetter) originalLetter.style.display = 'none';
+            if (originalLetter) {
+                originalLetter.remove();
+            }
+
+            playSnapSound();
         });
 
         document.getElementById('check').addEventListener('click', () => {
@@ -179,10 +215,10 @@
             if (guessedWord === currentWord) {
                 document.getElementById('message').textContent = 'Correct! Well done!';
                 score++;
+                generateConfetti();
                 generatePuzzle();
             } else {
                 document.getElementById('message').textContent = `Incorrect! The correct word was: ${currentWord}`;
-                generatePuzzle();
             }
 
             document.getElementById('score').textContent = `Score: ${score}`;
