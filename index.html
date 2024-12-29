@@ -110,7 +110,7 @@
             "blue", "fig", "gold", "hum", "moon", "pug", "six", "tap", "violet", "wig",
             "brick", "fix", "green", "ice", "noble", "quiet", "six", "tan", "vivid", "won",
             "brother", "flame", "gum", "index", "not", "ram", "six", "tea", "wax", "xenon",
-            "bug", "fox", "hat", "jaw", "ocean", "rat", "snow", "tear", "wear",
+            "bug", "fox", "hat", "jaw", "ocean", "rat", "snow", "tear", "wear", "yellow",
             "brown", "fun", "hay", "jog", "owl", "raw", "snow", "three", "yellow", "zebra",
             "cap", "gap", "gear", "jug", "pea", "red", "snow", "toy", "zebra", "white"
         ];
@@ -157,57 +157,43 @@
                 letterElement.draggable = true;
                 letterElement.dataset.letter = letter;
 
-                letterElement.addEventListener('dragstart', event => {
-                    event.dataTransfer.setData('text', letter);
+                letterElement.addEventListener('touchstart', event => {
+                    const touch = event.touches[0];
+                    letterElement.style.position = 'absolute';
+                    letterElement.style.left = `${touch.clientX}px`;
+                    letterElement.style.top = `${touch.clientY}px`;
                 });
 
-                letterElement.addEventListener('dragend', () => {
-                    const dropZone = document.getElementById('drop-zone');
-                    const isInDropZone = Array.from(dropZone.children).some(child => child.dataset.letter === letterElement.dataset.letter);
+                letterElement.addEventListener('touchmove', event => {
+                    const touch = event.touches[0];
+                    letterElement.style.left = `${touch.clientX - 20}px`;
+                    letterElement.style.top = `${touch.clientY - 20}px`;
+                });
 
-                    if (!isInDropZone) {
-                        const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letterElement.dataset.letter}"]`);
-                        if (!originalLetter) {
-                            jumbledBox.appendChild(letterElement);
-                        }
+                letterElement.addEventListener('touchend', () => {
+                    const dropZone = document.getElementById('drop-zone');
+                    const rect = dropZone.getBoundingClientRect();
+
+                    const x = parseInt(letterElement.style.left);
+                    const y = parseInt(letterElement.style.top);
+
+                    if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+                        dropZone.appendChild(letterElement);
+                        letterElement.style.position = 'static';
+                        letterElement.style.left = '';
+                        letterElement.style.top = '';
+                    } else {
+                        const jumbledBox = document.getElementById('jumbled-box');
+                        jumbledBox.appendChild(letterElement);
+                        letterElement.style.position = 'static';
+                        letterElement.style.left = '';
+                        letterElement.style.top = '';
                     }
                 });
 
                 jumbledBox.appendChild(letterElement);
             });
         }
-
-        document.getElementById('drop-zone').addEventListener('dragover', event => {
-            event.preventDefault();
-        });
-
-        document.getElementById('drop-zone').addEventListener('drop', event => {
-            event.preventDefault();
-            const letter = event.dataTransfer.getData('text');
-
-            const droppedLetter = document.createElement('span');
-            droppedLetter.textContent = letter;
-            droppedLetter.className = 'word-piece';
-            droppedLetter.draggable = true;
-            droppedLetter.dataset.letter = letter;
-
-            droppedLetter.addEventListener('dragstart', event => {
-                event.dataTransfer.setData('text', letter);
-                const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
-                if (!originalLetter) {
-                    document.getElementById('jumbled-box').appendChild(droppedLetter);
-                }
-            });
-
-            document.getElementById('drop-zone').appendChild(droppedLetter);
-
-            const originalLetter = document.querySelector(`.jumbled-box span[data-letter="${letter}"]`);
-            if (originalLetter) {
-                originalLetter.remove();
-            }
-
-            playSnapSound();
-        });
 
         document.getElementById('check').addEventListener('click', () => {
             const guessedWord = Array.from(document.getElementById('drop-zone').children).map(el => el.textContent).join('');
